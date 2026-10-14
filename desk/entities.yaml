@@ -1,0 +1,113 @@
+# Home Assistant entities for desk/control.yaml and desk/standalone.yaml.
+
+api:
+  actions:
+    # Protocol exploration: hold a raw panel button code (0-255) for ms (max 10 s).
+    - action: press
+      variables:
+        code: int
+        ms: int
+      then:
+        - lambda: id(desk).press(code, ms);
+    - action: stop
+      then:
+        - lambda: id(desk).stop();
+
+cover:
+  - platform: template
+    id: desk_cover
+    name: Desk
+    icon: mdi:desk
+    device_class: shade
+    has_position: true
+    open_action:
+      - lambda: id(desk).move_to(id(desk).get_max_height());
+    close_action:
+      - lambda: id(desk).move_to(id(desk).get_min_height());
+    stop_action:
+      - lambda: id(desk).stop();
+    position_action:
+      - lambda: |-
+          auto *d = id(desk);
+          d->move_to(d->get_min_height() + pos * (d->get_max_height() - d->get_min_height()));
+
+number:
+  - platform: template
+    id: target_height
+    name: Target height
+    icon: mdi:arrow-expand-vertical
+    unit_of_measurement: cm
+    device_class: distance
+    mode: box
+    min_value: 62
+    max_value: 120
+    step: 0.5
+    update_interval: 1s
+    lambda: |-
+      float h = id(desk).get_height();
+      if (std::isnan(h)) return {};
+      return h;
+    set_action:
+      - lambda: id(desk).move_to(x);
+
+button:
+  - platform: template
+    name: Up
+    icon: mdi:arrow-up-bold
+    on_press:
+      - lambda: id(desk).move_up();
+  - platform: template
+    name: Down
+    icon: mdi:arrow-down-bold
+    on_press:
+      - lambda: id(desk).move_down();
+  - platform: template
+    name: Stop
+    icon: mdi:stop
+    on_press:
+      - lambda: id(desk).stop();
+  - platform: template
+    name: Preset 1
+    icon: mdi:numeric-1-box
+    on_press:
+      - lambda: id(desk).goto_preset(1);
+  - platform: template
+    name: Preset 2
+    icon: mdi:numeric-2-box
+    on_press:
+      - lambda: id(desk).goto_preset(2);
+  - platform: template
+    name: Preset 3
+    icon: mdi:numeric-3-box
+    on_press:
+      - lambda: id(desk).goto_preset(3);
+  - platform: template
+    name: Preset 4
+    icon: mdi:numeric-4-box
+    on_press:
+      - lambda: id(desk).goto_preset(4);
+
+binary_sensor:
+  - platform: template
+    name: Moving
+    device_class: moving
+    lambda: return id(desk).is_moving();
+
+interval:
+  # Keep the cover's position and direction in sync with the desk.
+  - interval: 250ms
+    then:
+      - lambda: |-
+          auto *d = id(desk);
+          float h = d->get_height();
+          if (std::isnan(h)) return;
+          float pos = clamp((h - d->get_min_height()) / (d->get_max_height() - d->get_min_height()), 0.0f, 1.0f);
+          auto op = d->direction() > 0   ? COVER_OPERATION_OPENING
+                    : d->direction() < 0 ? COVER_OPERATION_CLOSING
+                                         : COVER_OPERATION_IDLE;
+          auto *c = id(desk_cover);
+          if (c->position != pos || c->current_operation != op) {
+            c->position = pos;
+            c->current_operation = op;
+            c->publish_state();
+          }

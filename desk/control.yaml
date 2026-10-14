@@ -1,0 +1,56 @@
+# Phase 2 - control. The ESP sits in the middle of the R and KEY1 lines:
+# it forwards the panel to the box and substitutes its own frames while moving.
+# Pressing any button on the panel immediately hands control back to the panel.
+# If the ESP is off or rebooting, the panel cannot move the desk.
+#
+# Wiring (ESP powered from USB, NOT from the desk):
+#   desk G                 -> NodeMCU GND
+#   desk 5                 -> straight through, panel <-> box (not to the ESP)
+#   desk T (box -> panel)  -> straight through, plus divider -> D1 / GPIO5
+#   desk R, panel side     -> divider -> D7 / GPIO13
+#   desk R, box side       <- 330 Ω   <- D4 / GPIO2   (hardware UART1 TX)
+#   (Q200-23 labels are from the box's side: R = box input, T = box output)
+#   desk KEY1, panel side  -> divider -> D6 / GPIO12
+#   desk KEY1, box side    <- 330 Ω   <- D5 / GPIO14, plus 10 kΩ from box side to GND
+#   divider: 1 kΩ in series from the desk wire, 2.2 kΩ from the GPIO to GND
+#
+# The 10 kΩ pull-down on KEY1 is required: a floating KEY1 while the ESP boots
+# has made other people's desks drive to full height.
+
+logger:
+  # UART0 is used for the panel bus; logs are available over Wi-Fi.
+  baud_rate: 0
+
+uart:
+  - id: panel_bus
+    # GPIO13 alone selects the hardware UART0 (swapped pins)
+    rx_pin: GPIO13
+    baud_rate: 9600
+    rx_buffer_size: 256
+  - id: box_bus
+    rx_pin: GPIO5
+    baud_rate: 9600
+    rx_buffer_size: 256
+  - id: box_tx_bus
+    # GPIO2 alone selects the hardware UART1 (TX only), no interrupt-blocking soft serial
+    tx_pin: GPIO2
+    baud_rate: 9600
+
+jsdesk:
+  id: desk
+  panel_uart: panel_bus
+  box_uart: box_bus
+  box_tx_uart: box_tx_bus
+  key_in_pin: GPIO12
+  key_out_pin: GPIO14
+  # Range of this desk (62.0 - 120 cm).
+  min_height: 62
+  max_height: 120
+  # the desk coasts ~0.6 cm after a stop
+  stop_tolerance: 0.7
+  height:
+    id: desk_height
+    name: Height
+  display:
+    name: Display
+    entity_category: diagnostic

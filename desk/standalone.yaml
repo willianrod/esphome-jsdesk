@@ -1,0 +1,51 @@
+# Standalone - no panel connected; the ESP acts as the panel.
+# It polls the box with the idle frame (A5 00 00 FF FF) every 16 ms, which is
+# exactly what the panel sends when no button is pressed, and reads the height
+# from the replies. The desk only moves on an explicit command.
+#
+# On the Q200-23 box the labels are from the box's side:
+#   R = box input (panel -> box), T = box output (box -> panel)
+#
+# Wiring (panel unplugged).
+# Straight RJ45 patch cable (T568B) plugged into the box, colours at the far end:
+#   desk G  pin 5  white/blue   -> NodeMCU GND
+#   desk R  pin 2  orange       <- D4 / GPIO2   (hardware UART1 TX, ESP -> box)
+#   desk T  pin 1  white/orange -> D1 / GPIO5   (box -> ESP)
+#   desk P  pin 4  blue         <- D5 / GPIO14  (KEY1; on this box P alone moves the desk, keep it low)
+#   desk 5  pin 8  brown        -> VIN          (+5 V from the box powers the ESP)
+#   pins 3, 6, 7 (white/green, green, white/brown) unused
+# Recommended: 330 Ω in series on R and P, 1 kΩ / 2.2 kΩ divider on T,
+# 10 kΩ from P to GND.
+
+logger:
+  # UART0 is free without a panel, so logs also go to USB.
+  baud_rate: 115200
+
+uart:
+  - id: box_bus
+    rx_pin: GPIO5
+    baud_rate: 9600
+    rx_buffer_size: 256
+  - id: box_tx_bus
+    # GPIO2 alone selects the hardware UART1 (TX only)
+    tx_pin: GPIO2
+    baud_rate: 9600
+
+jsdesk:
+  id: desk
+  box_uart: box_bus
+  box_tx_uart: box_tx_bus
+  key_out_pin: GPIO14
+  # Range of this desk (62.0 - 120 cm).
+  min_height: 62
+  max_height: 120
+  # the desk coasts ~0.6 cm after a stop
+  stop_tolerance: 0.7
+  # set true to log every bus frame and 10 s statistics
+  log_frames: false
+  height:
+    id: desk_height
+    name: Height
+  display:
+    name: Display
+    entity_category: diagnostic

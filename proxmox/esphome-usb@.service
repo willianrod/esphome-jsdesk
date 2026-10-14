@@ -1,0 +1,10 @@
+[Unit]
+Description=Pass /dev/%i into ESPHome container (CT 109)
+BindsTo=dev-%i.device
+After=dev-%i.device
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/esphome-usb add %i
+ExecStop=/usr/local/bin/esphome-usb remove %i

@@ -1,0 +1,50 @@
+# Sit-stand desk: JSDRIVE / JSM controller (CT08-JS touch panel, Q200-23 box, "P R T 5 G" bus)
+# Board: NodeMCU v2 (ESP8266, 4 MB)
+#
+# desk/sniff.yaml      - listen only, nothing is driven (panel and box wired through)
+# desk/control.yaml    - ESP in the middle of the R and KEY1 lines, panel still works
+# desk/standalone.yaml - no panel, the ESP polls and controls the box
+# Switch by changing the include below; add desk/entities.yaml for control/standalone.
+# Wiring is described in each file.
+
+esphome:
+  name: desk
+  friendly_name: desk
+
+esp8266:
+  board: nodemcuv2
+  # Keep GPIOs untouched until the jsdesk component drives KEY1 low itself.
+  early_pin_init: false
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [jsdesk]
+
+packages:
+  desk: !include desk/standalone.yaml
+  entities: !include desk/entities.yaml
+
+logger:
+  level: DEBUG
+
+api:
+  encryption:
+    key: !secret desk_api_key
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # Address the dashboard/OTA uses. Give the ESP a DHCP reservation on the router
+  # and put that IP in secrets.yaml (desk.local also works where mDNS does).
+  # A static manual_ip may not be routed on mesh Wi-Fi systems; DHCP is safer.
+  use_address: !secret desk_address
+  ap:
+    ssid: desk Fallback Hotspot
+    password: !secret desk_ap_password
+
+captive_portal:
