@@ -136,9 +136,6 @@ of its file. `entities.yaml` is for `standalone` and `control`; leave it out wit
 
 - [docs/protocol.md](docs/protocol.md): the bus protocol (frames, buttons, 7-segment
   decoding, lock state).
-- [docs/proxmox-usb-passthrough.md](docs/proxmox-usb-passthrough.md): flashing over
-  USB when ESPHome runs in an unprivileged Proxmox LXC. Includes the files in
-  [`proxmox/`](proxmox/).
 
 ## Open questions
 

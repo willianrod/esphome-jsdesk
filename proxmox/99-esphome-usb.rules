@@ -1,3 +1,0 @@
-# USB serial adapters (ESP boards) -> ESPHome CT 109. Excludes a device used elsewhere (e.g. a Zigbee dongle);
-# find its serial with: udevadm info /dev/ttyUSB0 | grep ID_SERIAL_SHORT
-ACTION=="add", SUBSYSTEM=="tty", KERNEL=="ttyUSB[0-9]*|ttyACM[0-9]*", ENV{ID_SERIAL_SHORT}!="<SERIAL-OF-DEVICE-TO-EXCLUDE>", OWNER="100000", GROUP="100020", MODE="0660", TAG+="systemd", ENV{SYSTEMD_WANTS}+="esphome-usb@%k.service"
